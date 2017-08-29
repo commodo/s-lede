@@ -1,0 +1,9 @@
+--style=linux
+--indent=tab
+--indent-switches
+--align-pointer=name
+--pad-header
+--keep-one-line-blocks
+--keep-one-line-statements
+# Do not retain a copy of the original
+--suffix=none
