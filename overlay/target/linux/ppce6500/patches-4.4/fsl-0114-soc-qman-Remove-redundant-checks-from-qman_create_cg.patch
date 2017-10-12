@@ -1,0 +1,53 @@
+From e5caf693ac6ac498ef05c7c1947024d5b678626f Mon Sep 17 00:00:00 2001
+From: Claudiu Manoil <claudiu.manoil@nxp.com>
+Date: Wed, 16 Nov 2016 16:40:23 +0200
+Subject: [PATCH] soc/qman: Remove redundant checks from qman_create_cgr()
+
+opts is checked redundantly.
+Move local_opts declaration inside its usage scope.
+
+Signed-off-by: Claudiu Manoil <claudiu.manoil@nxp.com>
+Signed-off-by: Scott Wood <oss@buserror.net>
+---
+ drivers/soc/fsl/qbman/qman.c | 8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
+
+diff --git a/drivers/soc/fsl/qbman/qman.c b/drivers/soc/fsl/qbman/qman.c
+index 307c818e14ab..4a1697eefcdf 100644
+--- a/drivers/soc/fsl/qbman/qman.c
++++ b/drivers/soc/fsl/qbman/qman.c
+@@ -2294,7 +2294,6 @@ int qman_create_cgr(struct qman_cgr *cgr, u32 flags,
+ 		    struct qm_mcc_initcgr *opts)
+ {
+ 	struct qm_mcr_querycgr cgr_state;
+-	struct qm_mcc_initcgr local_opts = {};
+ 	int ret;
+ 	struct qman_portal *p;
+ 
+@@ -2316,11 +2315,12 @@ int qman_create_cgr(struct qman_cgr *cgr, u32 flags,
+ 	spin_lock(&p->cgr_lock);
+ 
+ 	if (opts) {
++		struct qm_mcc_initcgr local_opts = *opts;
++
+ 		ret = qman_query_cgr(cgr, &cgr_state);
+ 		if (ret)
+ 			goto out;
+-		if (opts)
+-			local_opts = *opts;
++
+ 		if ((qman_ip_rev & 0xFF00) >= QMAN_REV30)
+ 			local_opts.cgr.cscn_targ_upd_ctrl =
+ 				QM_CGR_TARG_UDP_CTRL_WRITE_BIT | PORTAL_IDX(p);
+@@ -2331,7 +2331,7 @@ int qman_create_cgr(struct qman_cgr *cgr, u32 flags,
+ 		local_opts.we_mask |= QM_CGR_WE_CSCN_TARG;
+ 
+ 		/* send init if flags indicate so */
+-		if (opts && (flags & QMAN_CGR_FLAG_USE_INIT))
++		if (flags & QMAN_CGR_FLAG_USE_INIT)
+ 			ret = qm_modify_cgr(cgr, QMAN_CGR_FLAG_USE_INIT,
+ 					    &local_opts);
+ 		else
+-- 
+2.11.0
+

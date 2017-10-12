@@ -1,0 +1,36 @@
+From 3fe61f0940d9c7892462c893602fdccfe8b24e8c Mon Sep 17 00:00:00 2001
+From: Madalin Bucur <madalin.bucur@nxp.com>
+Date: Wed, 4 Jan 2017 13:21:29 +0200
+Subject: [PATCH] dpaa_eth: cleanup after init_phy() failure
+
+Signed-off-by: Madalin Bucur <madalin.bucur@nxp.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+---
+ drivers/net/ethernet/freescale/dpaa/dpaa_eth.c | 4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
+
+diff --git a/drivers/net/ethernet/freescale/dpaa/dpaa_eth.c b/drivers/net/ethernet/freescale/dpaa/dpaa_eth.c
+index 624ba9058dc4..77517aa3e8d9 100644
+--- a/drivers/net/ethernet/freescale/dpaa/dpaa_eth.c
++++ b/drivers/net/ethernet/freescale/dpaa/dpaa_eth.c
+@@ -2291,7 +2291,8 @@ static int dpaa_open(struct net_device *net_dev)
+ 	net_dev->phydev = mac_dev->init_phy(net_dev, priv->mac_dev);
+ 	if (!net_dev->phydev) {
+ 		netif_err(priv, ifup, net_dev, "init_phy() failed\n");
+-		return -ENODEV;
++		err = -ENODEV;
++		goto phy_init_failed;
+ 	}
+ 
+ 	for (i = 0; i < ARRAY_SIZE(mac_dev->port); i++) {
+@@ -2314,6 +2315,7 @@ static int dpaa_open(struct net_device *net_dev)
+ 	for (i = 0; i < ARRAY_SIZE(mac_dev->port); i++)
+ 		fman_port_disable(mac_dev->port[i]);
+ 
++phy_init_failed:
+ 	dpaa_eth_napi_disable(priv);
+ 
+ 	return err;
+-- 
+2.11.0
+

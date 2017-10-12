@@ -1,0 +1,126 @@
+From 589b6d5d84dd38b7c521a8d8c264e87d26d42705 Mon Sep 17 00:00:00 2001
+From: Madalin Bucur <madalin.bucur@nxp.com>
+Date: Fri, 14 Oct 2016 16:57:21 +0300
+Subject: [PATCH 20/57] fsl/fman: cherry-pick of upstream fixes
+
+Cherry-pick of fsl/fman upstream changes:
+ commit 287980e49ffc0f6d911601e7e352a812ed27768e
+ Author: Arnd Bergmann <arnd@arndb.de>
+ Date:   Fri May 27 23:23:25 2016 +0200
+
+    remove lots of IS_ERR_VALUE abuses
+
+    Most users of IS_ERR_VALUE() in the kernel are wrong, as they
+    pass an 'int' into a function that takes an 'unsigned long'
+    argument. This happens to work because the type is sign-extended
+    on 64-bit architectures before it gets converted into an
+    unsigned type.
+
+    However, anything that passes an 'unsigned short' or 'unsigned int'
+    argument into IS_ERR_VALUE() is guaranteed to be broken, as are
+    8-bit integers and types that are wider than 'unsigned long'.
+
+    Andrzej Hajda has already fixed a lot of the worst abusers that
+    were causing actual bugs, but it would be nice to prevent any
+    users that are not passing 'unsigned long' arguments.
+
+    This patch changes all users of IS_ERR_VALUE() that I could find
+    on 32-bit ARM randconfig builds and x86 allmodconfig. For the
+    moment, this doesn't change the definition of IS_ERR_VALUE()
+    because there are probably still architecture specific users
+    elsewhere.
+
+    Almost all the warnings I got are for files that are better off
+    using 'if (err)' or 'if (err < 0)'.
+    The only legitimate user I could find that we get a warning for
+    is the (32-bit only) freescale fman driver, so I did not remove
+    the IS_ERR_VALUE() there but changed the type to 'unsigned long'.
+    For 9pfs, I just worked around one user whose calling conventions
+    are so obscure that I did not dare change the behavior.
+
+    I was using this definition for testing:
+
+     #define IS_ERR_VALUE(x) ((unsigned long*)NULL == (typeof (x)*)NULL && \
+           unlikely((unsigned long long)(x) >= (unsigned long long)(typeof(x))-MAX_ERRNO))
+
+    which ends up making all 16-bit or wider types work correctly with
+    the most plausible interpretation of what IS_ERR_VALUE() was supposed
+    to return according to its users, but also causes a compile-time
+    warning for any users that do not pass an 'unsigned long' argument.
+
+    I suggested this approach earlier this year, but back then we ended
+    up deciding to just fix the users that are obviously broken. After
+    the initial warning that caused me to get involved in the discussion
+    (fs/gfs2/dir.c) showed up again in the mainline kernel, Linus
+    asked me to send the whole thing again.
+
+    [ Updated the 9p parts as per Al Viro  - Linus ]
+
+    Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+    Cc: Andrzej Hajda <a.hajda@samsung.com>
+    Cc: Andrew Morton <akpm@linux-foundation.org>
+    Link: https://lkml.org/lkml/2016/1/7/363
+    Link: https://lkml.org/lkml/2016/5/27/486
+    Acked-by: Srinivas Kandagatla <srinivas.kandagatla@linaro.org> # For nvmem part
+    Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+
+Signed-off-by: Madalin Bucur <madalin.bucur@nxp.com>
+---
+ drivers/net/ethernet/freescale/fman/fman.c       | 2 +-
+ drivers/net/ethernet/freescale/fman/fman_muram.c | 4 ++--
+ drivers/net/ethernet/freescale/fman/fman_muram.h | 4 ++--
+ 3 files changed, 5 insertions(+), 5 deletions(-)
+
+diff --git a/drivers/net/ethernet/freescale/fman/fman.c b/drivers/net/ethernet/freescale/fman/fman.c
+index bcb9dcc..1de2e1e 100644
+--- a/drivers/net/ethernet/freescale/fman/fman.c
++++ b/drivers/net/ethernet/freescale/fman/fman.c
+@@ -615,7 +615,7 @@ struct fman {
+ 	struct fman_cfg *cfg;
+ 	struct muram_info *muram;
+ 	/* cam section in muram */
+-	int cam_offset;
++	unsigned long cam_offset;
+ 	size_t cam_size;
+ 	/* Fifo in MURAM */
+ 	int fifo_offset;
+diff --git a/drivers/net/ethernet/freescale/fman/fman_muram.c b/drivers/net/ethernet/freescale/fman/fman_muram.c
+index 4eb0e9a..47394c4 100644
+--- a/drivers/net/ethernet/freescale/fman/fman_muram.c
++++ b/drivers/net/ethernet/freescale/fman/fman_muram.c
+@@ -129,7 +129,7 @@ unsigned long fman_muram_offset_to_vbase(struct muram_info *muram,
+  *
+  * Return: address of the allocated memory; NULL otherwise.
+  */
+-int fman_muram_alloc(struct muram_info *muram, size_t size)
++unsigned long fman_muram_alloc(struct muram_info *muram, size_t size)
+ {
+ 	unsigned long vaddr;
+ 
+@@ -150,7 +150,7 @@ int fman_muram_alloc(struct muram_info *muram, size_t size)
+  *
+  * Free an allocated memory from FM-MURAM partition.
+  */
+-void fman_muram_free_mem(struct muram_info *muram, u32 offset, size_t size)
++void fman_muram_free_mem(struct muram_info *muram, unsigned long offset, size_t size)
+ {
+ 	unsigned long addr = fman_muram_offset_to_vbase(muram, offset);
+ 
+diff --git a/drivers/net/ethernet/freescale/fman/fman_muram.h b/drivers/net/ethernet/freescale/fman/fman_muram.h
+index dbf0af9..889649a 100644
+--- a/drivers/net/ethernet/freescale/fman/fman_muram.h
++++ b/drivers/net/ethernet/freescale/fman/fman_muram.h
+@@ -44,8 +44,8 @@ struct muram_info *fman_muram_init(phys_addr_t base, size_t size);
+ unsigned long fman_muram_offset_to_vbase(struct muram_info *muram,
+ 					 unsigned long offset);
+ 
+-int fman_muram_alloc(struct muram_info *muram, size_t size);
++unsigned long fman_muram_alloc(struct muram_info *muram, size_t size);
+ 
+-void fman_muram_free_mem(struct muram_info *muram, u32 offset, size_t size);
++void fman_muram_free_mem(struct muram_info *muram, unsigned long offset, size_t size);
+ 
+ #endif /* __FM_MURAM_EXT */
+-- 
+2.10.2
+

@@ -1,0 +1,40 @@
+From 97df6e82bc6f6aaf53e339cbb13f38d397fe137e Mon Sep 17 00:00:00 2001
+From: Igal Liberman <igal.liberman@freescale.com>
+Date: Sun, 28 Feb 2016 23:59:53 +0200
+Subject: [PATCH 16/57] fsl/fman: Initialize fman->dev earlier
+
+Currently, in a case of error, dev_err is using fman->dev
+before its initialization and "(NULL device *)" is printed.
+This patch fixes this issue.
+
+Signed-off-by: Igal Liberman <igal.liberman@freescale.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+---
+ drivers/net/ethernet/freescale/fman/fman.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/net/ethernet/freescale/fman/fman.c b/drivers/net/ethernet/freescale/fman/fman.c
+index 623aa1c..79a210a 100644
+--- a/drivers/net/ethernet/freescale/fman/fman.c
++++ b/drivers/net/ethernet/freescale/fman/fman.c
+@@ -2791,6 +2791,8 @@ static struct fman *read_dts_node(struct platform_device *of_dev)
+ 		goto fman_free;
+ 	}
+ 
++	fman->dev = &of_dev->dev;
++
+ 	return fman;
+ 
+ fman_node_put:
+@@ -2845,8 +2847,6 @@ static int fman_probe(struct platform_device *of_dev)
+ 
+ 	dev_set_drvdata(dev, fman);
+ 
+-	fman->dev = dev;
+-
+ 	dev_dbg(dev, "FMan%d probed\n", fman->dts_params.id);
+ 
+ 	return 0;
+-- 
+2.10.2
+

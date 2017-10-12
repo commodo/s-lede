@@ -1,0 +1,62 @@
+From 329d09089c473cd49e131dae1a292e319dc0d91a Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Horia=20Geant=C4=83?= <horia.geanta@nxp.com>
+Date: Fri, 17 Mar 2017 12:05:57 +0200
+Subject: [PATCH] soc/qman: add dedicated channel ID for CAAM
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+Add and export the ID of the channel serviced by the
+CAAM (Cryptographic Acceleration and Assurance Module) DCP.
+
+Signed-off-by: Horia Geantă <horia.geanta@nxp.com>
+Signed-off-by: Herbert Xu <herbert@gondor.apana.org.au>
+---
+ drivers/soc/fsl/qbman/qman_ccsr.c | 6 +++++-
+ include/soc/fsl/qman.h            | 3 +++
+ 2 files changed, 8 insertions(+), 1 deletion(-)
+
+diff --git a/drivers/soc/fsl/qbman/qman_ccsr.c b/drivers/soc/fsl/qbman/qman_ccsr.c
+index f4e6e70de259..90bc40c48675 100644
+--- a/drivers/soc/fsl/qbman/qman_ccsr.c
++++ b/drivers/soc/fsl/qbman/qman_ccsr.c
+@@ -34,6 +34,8 @@ u16 qman_ip_rev;
+ EXPORT_SYMBOL(qman_ip_rev);
+ u16 qm_channel_pool1 = QMAN_CHANNEL_POOL1;
+ EXPORT_SYMBOL(qm_channel_pool1);
++u16 qm_channel_caam = QMAN_CHANNEL_CAAM;
++EXPORT_SYMBOL(qm_channel_caam);
+ 
+ /* Register offsets */
+ #define REG_QCSP_LIO_CFG(n)	(0x0000 + ((n) * 0x10))
+@@ -720,8 +722,10 @@ static int fsl_qman_probe(struct platform_device *pdev)
+ 		return -ENODEV;
+ 	}
+ 
+-	if ((qman_ip_rev & 0xff00) >= QMAN_REV30)
++	if ((qman_ip_rev & 0xff00) >= QMAN_REV30) {
+ 		qm_channel_pool1 = QMAN_CHANNEL_POOL1_REV3;
++		qm_channel_caam = QMAN_CHANNEL_CAAM_REV3;
++	}
+ 
+ 	ret = zero_priv_mem(dev, node, fqd_a, fqd_sz);
+ 	WARN_ON(ret);
+diff --git a/include/soc/fsl/qman.h b/include/soc/fsl/qman.h
+index 4de1ffcc8982..10b549783ec5 100644
+--- a/include/soc/fsl/qman.h
++++ b/include/soc/fsl/qman.h
+@@ -36,8 +36,11 @@
+ /* Hardware constants */
+ #define QM_CHANNEL_SWPORTAL0 0
+ #define QMAN_CHANNEL_POOL1 0x21
++#define QMAN_CHANNEL_CAAM 0x80
+ #define QMAN_CHANNEL_POOL1_REV3 0x401
++#define QMAN_CHANNEL_CAAM_REV3 0x840
+ extern u16 qm_channel_pool1;
++extern u16 qm_channel_caam;
+ 
+ /* Portal processing (interrupt) sources */
+ #define QM_PIRQ_CSCI	0x00100000	/* Congestion State Change */
+-- 
+2.11.0
+

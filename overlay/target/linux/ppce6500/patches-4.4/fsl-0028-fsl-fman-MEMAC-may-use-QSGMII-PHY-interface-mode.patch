@@ -1,0 +1,27 @@
+From 8b30e79312436adfc7a67703787546cabe8c322b Mon Sep 17 00:00:00 2001
+From: Madalin Bucur <madalin.bucur@nxp.com>
+Date: Fri, 24 Jun 2016 12:25:05 +0300
+Subject: [PATCH 28/57] fsl/fman: MEMAC may use QSGMII PHY interface mode
+
+Signed-off-by: Madalin Bucur <madalin.bucur@nxp.com>
+---
+ drivers/net/ethernet/freescale/fman/fman_memac.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+diff --git a/drivers/net/ethernet/freescale/fman/fman_memac.c b/drivers/net/ethernet/freescale/fman/fman_memac.c
+index 58bb720..eab6ec9 100644
+--- a/drivers/net/ethernet/freescale/fman/fman_memac.c
++++ b/drivers/net/ethernet/freescale/fman/fman_memac.c
+@@ -1151,7 +1151,8 @@ struct fman_mac *memac_config(struct fman_mac_params *params)
+ 	/* Save FMan revision */
+ 	fman_get_revision(memac->fm, &memac->fm_rev_info);
+ 
+-	if (memac->phy_if == PHY_INTERFACE_MODE_SGMII) {
++	if (memac->phy_if == PHY_INTERFACE_MODE_SGMII ||
++	    memac->phy_if == PHY_INTERFACE_MODE_QSGMII) {
+ 		if (!params->internal_phy_node) {
+ 			pr_err("PCS PHY node is not available\n");
+ 			memac_free(memac);
+-- 
+2.10.2
+

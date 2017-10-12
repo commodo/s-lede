@@ -1,0 +1,27 @@
+From 6fc7d047bc2cb3f60a6f7ea63917b8a8c9255717 Mon Sep 17 00:00:00 2001
+From: Madalin Bucur <madalin.bucur@nxp.com>
+Date: Wed, 19 Jul 2017 15:00:31 +0300
+Subject: [PATCH] dpaa_eth: check allocation result
+
+Signed-off-by: Madalin Bucur <madalin.bucur@nxp.com>
+---
+ drivers/net/ethernet/freescale/dpaa/dpaa_eth.c | 3 +++
+ 1 file changed, 3 insertions(+)
+
+diff --git a/drivers/net/ethernet/freescale/dpaa/dpaa_eth.c b/drivers/net/ethernet/freescale/dpaa/dpaa_eth.c
+index 2bab8bd50c0e..5038012dd26a 100644
+--- a/drivers/net/ethernet/freescale/dpaa/dpaa_eth.c
++++ b/drivers/net/ethernet/freescale/dpaa/dpaa_eth.c
+@@ -2547,6 +2547,9 @@ static struct dpaa_bp *dpaa_bp_alloc(struct device *dev)
+ 
+ 	dpaa_bp->bpid = FSL_DPAA_BPID_INV;
+ 	dpaa_bp->percpu_count = devm_alloc_percpu(dev, *dpaa_bp->percpu_count);
++	if (!dpaa_bp->percpu_count)
++		return ERR_PTR(-ENOMEM);
++
+ 	dpaa_bp->config_count = FSL_DPAA_ETH_MAX_BUF_COUNT;
+ 
+ 	dpaa_bp->seed_cb = dpaa_bp_seed;
+-- 
+2.11.0
+

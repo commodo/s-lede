@@ -1,0 +1,33 @@
+From 58b7bd0f4b35284c64b70c65cc208f74af6080cb Mon Sep 17 00:00:00 2001
+From: Madalin Bucur <madalin.bucur@nxp.com>
+Date: Thu, 30 Mar 2017 16:24:15 +0300
+Subject: [PATCH] dpaa_eth: use AVOIDBLOCK for Tx confirmation queues
+
+The AVOIDBLOCK flag determines the Tx confirmation queues processing
+to be redirected to any available CPU when the current one is slow
+in processing them. This may result in a higher Tx confirmation
+interrupt count but may reduce pressure on a certain CPU that with
+the previous setting would process all Tx confirmation frames.
+
+Signed-off-by: Madalin Bucur <madalin.bucur@nxp.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+---
+ drivers/net/ethernet/freescale/dpaa/dpaa_eth.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/net/ethernet/freescale/dpaa/dpaa_eth.c b/drivers/net/ethernet/freescale/dpaa/dpaa_eth.c
+index d4bb8bf86a45..9a520e4f0df9 100644
+--- a/drivers/net/ethernet/freescale/dpaa/dpaa_eth.c
++++ b/drivers/net/ethernet/freescale/dpaa/dpaa_eth.c
+@@ -974,7 +974,7 @@ static int dpaa_fq_init(struct dpaa_fq *dpaa_fq, bool td_enable)
+ 		 * Tx Confirmation FQs.
+ 		 */
+ 		if (dpaa_fq->fq_type == FQ_TYPE_TX_CONFIRM)
+-			initfq.fqd.fq_ctrl |= cpu_to_be16(QM_FQCTRL_HOLDACTIVE);
++			initfq.fqd.fq_ctrl |= cpu_to_be16(QM_FQCTRL_AVOIDBLOCK);
+ 
+ 		/* FQ placement */
+ 		initfq.we_mask |= cpu_to_be16(QM_INITFQ_WE_DESTWQ);
+-- 
+2.11.0
+

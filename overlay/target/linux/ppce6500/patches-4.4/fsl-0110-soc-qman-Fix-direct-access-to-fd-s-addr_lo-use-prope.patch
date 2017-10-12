@@ -1,0 +1,34 @@
+From b6e969dbaec0fe6633a756468e74151ebb1e6c49 Mon Sep 17 00:00:00 2001
+From: Claudiu Manoil <claudiu.manoil@nxp.com>
+Date: Wed, 16 Nov 2016 16:40:19 +0200
+Subject: [PATCH] soc/qman: Fix direct access to fd's addr_lo, use proper
+ accesor
+
+Use the proper accessor to get the FD address.
+Accessing the internal field "addr_lo" directly is not portable
+and error prone.
+
+Signed-off-by: Claudiu Manoil <claudiu.manoil@nxp.com>
+Signed-off-by: Scott Wood <oss@buserror.net>
+---
+ drivers/soc/fsl/qbman/qman.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/soc/fsl/qbman/qman.c b/drivers/soc/fsl/qbman/qman.c
+index e350ed6450ae..96b0f004e007 100644
+--- a/drivers/soc/fsl/qbman/qman.c
++++ b/drivers/soc/fsl/qbman/qman.c
+@@ -1239,8 +1239,8 @@ static int qman_create_portal(struct qman_portal *portal,
+ 		/* special handling, drain just in case it's a few FQRNIs */
+ 		const union qm_mr_entry *e = qm_mr_current(p);
+ 
+-		dev_err(c->dev, "MR dirty, VB 0x%x, rc 0x%x\n, addr 0x%x",
+-			e->verb, e->ern.rc, e->ern.fd.addr_lo);
++		dev_err(c->dev, "MR dirty, VB 0x%x, rc 0x%x, addr 0x%llx\n",
++			e->verb, e->ern.rc, qm_fd_addr_get64(&e->ern.fd));
+ 		goto fail_dqrr_mr_empty;
+ 	}
+ 	/* Success */
+-- 
+2.11.0
+

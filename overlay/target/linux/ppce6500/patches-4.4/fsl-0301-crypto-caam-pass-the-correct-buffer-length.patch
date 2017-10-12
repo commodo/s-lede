@@ -1,0 +1,31 @@
+From f456cd2dc8578f989ef12964c11aa7b2fafbc319 Mon Sep 17 00:00:00 2001
+From: Fabio Estevam <fabio.estevam@freescale.com>
+Date: Mon, 30 Nov 2015 11:03:58 -0200
+Subject: [PATCH] crypto: caam - pass the correct buffer length
+
+When buffer 0 is used we should use buflen_0 instead of buflen_1.
+
+Fix it.
+
+Signed-off-by: Fabio Estevam <fabio.estevam@freescale.com>
+Signed-off-by: Herbert Xu <herbert@gondor.apana.org.au>
+---
+ drivers/crypto/caam/caamhash.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/crypto/caam/caamhash.c b/drivers/crypto/caam/caamhash.c
+index fe9c156333ca..5845d4a08797 100644
+--- a/drivers/crypto/caam/caamhash.c
++++ b/drivers/crypto/caam/caamhash.c
+@@ -1596,7 +1596,7 @@ static int ahash_export(struct ahash_request *req, void *out)
+ 		len = state->buflen_1;
+ 	} else {
+ 		buf = state->buf_0;
+-		len = state->buflen_1;
++		len = state->buflen_0;
+ 	}
+ 
+ 	memcpy(export->buf, buf, len);
+-- 
+2.11.0
+

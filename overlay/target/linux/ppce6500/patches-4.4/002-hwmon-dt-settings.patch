@@ -1,0 +1,64 @@
+--- a/drivers/hwmon/w83793.c
++++ b/drivers/hwmon/w83793.c
+@@ -47,6 +47,8 @@
+ #include <linux/notifier.h>
+ #include <linux/reboot.h>
+ #include <linux/jiffies.h>
++#include <linux/of.h>
++#include <linux/of_device.h>
+ 
+ /* Default values */
+ #define WATCHDOG_TIMEOUT 2	/* 2 minute default timeout */
+@@ -311,10 +313,19 @@ static const struct i2c_device_id w83793
+ };
+ MODULE_DEVICE_TABLE(i2c, w83793_id);
+ 
++#ifdef CONFIG_OF
++static const struct of_device_id w83793_dt_match[] = {
++	{ .compatible = "winbond,w83793"},
++	{}
++};
++MODULE_DEVICE_TABLE(of, w83793_dt_match);
++#endif
++
+ static struct i2c_driver w83793_driver = {
+ 	.class		= I2C_CLASS_HWMON,
+ 	.driver = {
+ 		   .name = "w83793",
++		   .of_match_table = of_match_ptr(w83793_dt_match),
+ 	},
+ 	.probe		= w83793_probe,
+ 	.remove		= w83793_remove,
+@@ -1186,11 +1197,32 @@ static struct sensor_device_attribute_2
+ 		      store_sf_setup, SETUP_TEMP_CRITICAL, NOT_USED),
+ };
+ 
++#ifdef CONFIG_OF
++static void w83793_of_apply(struct i2c_client *client)
++{
++	struct device_node *np = client->dev.of_node;
++	u32 val;
++
++	if (!np)
++		return;
++
++	if (!of_property_read_u32(np, "mfc", &val))
++		w83793_write_value(client, W83793_REG_MFC, val);
++
++	if (!of_property_read_u32(np, "fanin-ctrl", &val))
++		w83793_write_value(client, W83793_REG_FANIN_CTRL, val);
++}
++#endif
++
+ static void w83793_init_client(struct i2c_client *client)
+ {
+ 	if (reset)
+ 		w83793_write_value(client, W83793_REG_CONFIG, 0x80);
+ 
++#ifdef CONFIG_OF
++	w83793_of_apply(client);
++#endif
++
+ 	/* Start monitoring */
+ 	w83793_write_value(client, W83793_REG_CONFIG,
+ 			   w83793_read_value(client, W83793_REG_CONFIG) | 0x01);

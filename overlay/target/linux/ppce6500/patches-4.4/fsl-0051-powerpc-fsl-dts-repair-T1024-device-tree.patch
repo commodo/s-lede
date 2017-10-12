@@ -1,0 +1,26 @@
+From ffdde4e568e0c25a125d7bdefd3d3b02354e6a99 Mon Sep 17 00:00:00 2001
+From: Madalin Bucur <madalin.bucur@freescale.com>
+Date: Fri, 1 Apr 2016 13:30:02 +0300
+Subject: [PATCH 51/57] powerpc/fsl/dts: repair T1024 device tree
+
+Signed-off-by: Madalin Bucur <madalin.bucur@freescale.com>
+
+Conflicts:
+	arch/powerpc/boot/dts/fsl/t1024rdb.dts
+---
+ arch/powerpc/boot/dts/fsl/t1024rdb.dts | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/arch/powerpc/boot/dts/fsl/t1024rdb.dts b/arch/powerpc/boot/dts/fsl/t1024rdb.dts
+index 2dbf878..979f36a 100644
+--- a/arch/powerpc/boot/dts/fsl/t1024rdb.dts
++++ b/arch/powerpc/boot/dts/fsl/t1024rdb.dts
+@@ -219,4 +219,4 @@
+ 	};
+ };
+ 
+-/include/ "t1024si-post.dtsi"
++#include "t1024si-post.dtsi"
+-- 
+2.10.2
+

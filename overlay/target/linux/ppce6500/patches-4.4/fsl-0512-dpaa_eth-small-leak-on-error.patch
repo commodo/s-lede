@@ -1,0 +1,31 @@
+From 785f35775d968e0f45231b754e945fcb3ed6bded Mon Sep 17 00:00:00 2001
+From: Dan Carpenter <dan.carpenter@oracle.com>
+Date: Thu, 16 Feb 2017 12:56:10 +0300
+Subject: [PATCH] dpaa_eth: small leak on error
+
+This should be >= instead of > here.  It means that we don't increment
+the free count enough so it becomes off by one.
+
+Fixes: 9ad1a3749333 ("dpaa_eth: add support for DPAA Ethernet")
+Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+---
+ drivers/net/ethernet/freescale/dpaa/dpaa_eth.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/net/ethernet/freescale/dpaa/dpaa_eth.c b/drivers/net/ethernet/freescale/dpaa/dpaa_eth.c
+index c9b7ad65e563..726b5693ae8a 100644
+--- a/drivers/net/ethernet/freescale/dpaa/dpaa_eth.c
++++ b/drivers/net/ethernet/freescale/dpaa/dpaa_eth.c
+@@ -1668,7 +1668,7 @@ static struct sk_buff *sg_fd_to_skb(const struct dpaa_priv *priv,
+ 
+ free_buffers:
+ 	/* compensate sw bpool counter changes */
+-	for (i--; i > 0; i--) {
++	for (i--; i >= 0; i--) {
+ 		dpaa_bp = dpaa_bpid2pool(sgt[i].bpid);
+ 		if (dpaa_bp) {
+ 			count_ptr = this_cpu_ptr(dpaa_bp->percpu_count);
+-- 
+2.11.0
+

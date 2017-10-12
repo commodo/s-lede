@@ -1,0 +1,429 @@
+From 18058822768f4665e2132ddd1cb413a9033edf09 Mon Sep 17 00:00:00 2001
+From: Claudiu Manoil <claudiu.manoil@nxp.com>
+Date: Wed, 16 Nov 2016 16:40:30 +0200
+Subject: [PATCH] soc/qman: Handle endianness of h/w descriptors
+
+The hardware descriptors have big endian (BE) format.
+Provide proper endianness handling for the remaining
+descriptor fields, to ensure they are correctly
+accessed by non-BE CPUs too.
+
+Signed-off-by: Claudiu Manoil <claudiu.manoil@nxp.com>
+Signed-off-by: Scott Wood <oss@buserror.net>
+---
+ drivers/soc/fsl/qbman/qman.c            | 65 ++++++++++++++++++---------------
+ drivers/soc/fsl/qbman/qman_priv.h       | 10 ++---
+ drivers/soc/fsl/qbman/qman_test_api.c   |  4 +-
+ drivers/soc/fsl/qbman/qman_test_stash.c |  5 ++-
+ include/soc/fsl/qman.h                  | 48 ++++++++++++------------
+ 5 files changed, 70 insertions(+), 62 deletions(-)
+
+diff --git a/drivers/soc/fsl/qbman/qman.c b/drivers/soc/fsl/qbman/qman.c
+index acee99da71a7..6f509f68085e 100644
+--- a/drivers/soc/fsl/qbman/qman.c
++++ b/drivers/soc/fsl/qbman/qman.c
+@@ -140,10 +140,10 @@ enum qm_mr_cmode {		/* matches QCSP_CFG::MM */
+ struct qm_eqcr_entry {
+ 	u8 _ncw_verb; /* writes to this are non-coherent */
+ 	u8 dca;
+-	u16 seqnum;
++	__be16 seqnum;
+ 	u8 __reserved[4];
+-	u32 fqid;	/* 24-bit */
+-	u32 tag;
++	__be32 fqid;	/* 24-bit */
++	__be32 tag;
+ 	struct qm_fd fd;
+ 	u8 __reserved3[32];
+ } __packed;
+@@ -187,7 +187,7 @@ struct qm_mr {
+ struct qm_mcc_fq {
+ 	u8 _ncw_verb;
+ 	u8 __reserved1[3];
+-	u32 fqid;	/* 24-bit */
++	__be32 fqid;	/* 24-bit */
+ 	u8 __reserved2[56];
+ } __packed;
+ 
+@@ -470,7 +470,7 @@ static inline struct qm_eqcr_entry *qm_eqcr_start_stash(struct qm_portal
+ static inline void eqcr_commit_checks(struct qm_eqcr *eqcr)
+ {
+ 	DPAA_ASSERT(eqcr->busy);
+-	DPAA_ASSERT(!(eqcr->cursor->fqid & ~QM_FQID_MASK));
++	DPAA_ASSERT(!(be32_to_cpu(eqcr->cursor->fqid) & ~QM_FQID_MASK));
+ 	DPAA_ASSERT(eqcr->available >= 1);
+ }
+ 
+@@ -1395,7 +1395,7 @@ static void qm_mr_process_task(struct work_struct *work)
+ 				break;
+ 			case QM_MR_VERB_FQPN:
+ 				/* Parked */
+-				fq = tag_to_fq(msg->fq.context_b);
++				fq = tag_to_fq(be32_to_cpu(msg->fq.context_b));
+ 				fq_state_change(p, fq, msg, verb);
+ 				if (fq->cb.fqs)
+ 					fq->cb.fqs(p, fq, msg);
+@@ -1409,7 +1409,7 @@ static void qm_mr_process_task(struct work_struct *work)
+ 			}
+ 		} else {
+ 			/* Its a software ERN */
+-			fq = tag_to_fq(msg->ern.tag);
++			fq = tag_to_fq(be32_to_cpu(msg->ern.tag));
+ 			fq->cb.ern(p, fq, msg);
+ 		}
+ 		num++;
+@@ -1521,7 +1521,7 @@ static inline unsigned int __poll_portal_fast(struct qman_portal *p,
+ 				clear_vdqcr(p, fq);
+ 		} else {
+ 			/* SDQCR: context_b points to the FQ */
+-			fq = tag_to_fq(dq->context_b);
++			fq = tag_to_fq(be32_to_cpu(dq->context_b));
+ 			/* Now let the callback do its stuff */
+ 			res = fq->cb.dqrr(p, fq, dq);
+ 			/*
+@@ -1738,9 +1738,9 @@ int qman_init_fq(struct qman_fq *fq, u32 flags, struct qm_mcc_initfq *opts)
+ 	if (fq_isset(fq, QMAN_FQ_FLAG_NO_MODIFY))
+ 		return -EINVAL;
+ #endif
+-	if (opts && (opts->we_mask & QM_INITFQ_WE_OAC)) {
++	if (opts && (be16_to_cpu(opts->we_mask) & QM_INITFQ_WE_OAC)) {
+ 		/* And can't be set at the same time as TDTHRESH */
+-		if (opts->we_mask & QM_INITFQ_WE_TDTHRESH)
++		if (be16_to_cpu(opts->we_mask) & QM_INITFQ_WE_TDTHRESH)
+ 			return -EINVAL;
+ 	}
+ 	/* Issue an INITFQ_[PARKED|SCHED] management command */
+@@ -1764,14 +1764,16 @@ int qman_init_fq(struct qman_fq *fq, u32 flags, struct qm_mcc_initfq *opts)
+ 	if (fq_isclear(fq, QMAN_FQ_FLAG_TO_DCPORTAL)) {
+ 		dma_addr_t phys_fq;
+ 
+-		mcc->initfq.we_mask |= QM_INITFQ_WE_CONTEXTB;
+-		mcc->initfq.fqd.context_b = fq_to_tag(fq);
++		mcc->initfq.we_mask |= cpu_to_be16(QM_INITFQ_WE_CONTEXTB);
++		mcc->initfq.fqd.context_b = cpu_to_be32(fq_to_tag(fq));
+ 		/*
+ 		 *  and the physical address - NB, if the user wasn't trying to
+ 		 * set CONTEXTA, clear the stashing settings.
+ 		 */
+-		if (!(mcc->initfq.we_mask & QM_INITFQ_WE_CONTEXTA)) {
+-			mcc->initfq.we_mask |= QM_INITFQ_WE_CONTEXTA;
++		if (!(be16_to_cpu(mcc->initfq.we_mask) &
++				  QM_INITFQ_WE_CONTEXTA)) {
++			mcc->initfq.we_mask |=
++				cpu_to_be16(QM_INITFQ_WE_CONTEXTA);
+ 			memset(&mcc->initfq.fqd.context_a, 0,
+ 				sizeof(mcc->initfq.fqd.context_a));
+ 		} else {
+@@ -1791,8 +1793,10 @@ int qman_init_fq(struct qman_fq *fq, u32 flags, struct qm_mcc_initfq *opts)
+ 	if (flags & QMAN_INITFQ_FLAG_LOCAL) {
+ 		int wq = 0;
+ 
+-		if (!(mcc->initfq.we_mask & QM_INITFQ_WE_DESTWQ)) {
+-			mcc->initfq.we_mask |= QM_INITFQ_WE_DESTWQ;
++		if (!(be16_to_cpu(mcc->initfq.we_mask) &
++				  QM_INITFQ_WE_DESTWQ)) {
++			mcc->initfq.we_mask |=
++				cpu_to_be16(QM_INITFQ_WE_DESTWQ);
+ 			wq = 4;
+ 		}
+ 		qm_fqd_set_destwq(&mcc->initfq.fqd, p->config->channel, wq);
+@@ -1811,13 +1815,13 @@ int qman_init_fq(struct qman_fq *fq, u32 flags, struct qm_mcc_initfq *opts)
+ 		goto out;
+ 	}
+ 	if (opts) {
+-		if (opts->we_mask & QM_INITFQ_WE_FQCTRL) {
+-			if (opts->fqd.fq_ctrl & QM_FQCTRL_CGE)
++		if (be16_to_cpu(opts->we_mask) & QM_INITFQ_WE_FQCTRL) {
++			if (be16_to_cpu(opts->fqd.fq_ctrl) & QM_FQCTRL_CGE)
+ 				fq_set(fq, QMAN_FQ_STATE_CGR_EN);
+ 			else
+ 				fq_clear(fq, QMAN_FQ_STATE_CGR_EN);
+ 		}
+-		if (opts->we_mask & QM_INITFQ_WE_CGID)
++		if (be16_to_cpu(opts->we_mask) & QM_INITFQ_WE_CGID)
+ 			fq->cgr_groupid = opts->fqd.cgid;
+ 	}
+ 	fq->state = (flags & QMAN_INITFQ_FLAG_SCHED) ?
+@@ -1937,7 +1941,7 @@ int qman_retire_fq(struct qman_fq *fq, u32 *flags)
+ 			msg.verb = QM_MR_VERB_FQRNI;
+ 			msg.fq.fqs = mcr->alterfq.fqs;
+ 			qm_fqid_set(&msg.fq, fq->fqid);
+-			msg.fq.context_b = fq_to_tag(fq);
++			msg.fq.context_b = cpu_to_be32(fq_to_tag(fq));
+ 			fq->cb.fqs(p, fq, &msg);
+ 		}
+ 	} else if (res == QM_MCR_RESULT_PENDING) {
+@@ -2206,7 +2210,7 @@ int qman_enqueue(struct qman_fq *fq, const struct qm_fd *fd)
+ 		goto out;
+ 
+ 	qm_fqid_set(eq, fq->fqid);
+-	eq->tag = fq_to_tag(fq);
++	eq->tag = cpu_to_be32(fq_to_tag(fq));
+ 	eq->fd = *fd;
+ 
+ 	qm_eqcr_pvb_commit(&p->p, QM_EQCR_VERB_CMD_ENQUEUE);
+@@ -2253,17 +2257,18 @@ static int qm_modify_cgr(struct qman_cgr *cgr, u32 flags,
+ static void qm_cgr_cscn_targ_set(struct __qm_mc_cgr *cgr, int pi, u32 val)
+ {
+ 	if (qman_ip_rev >= QMAN_REV30)
+-		cgr->cscn_targ_upd_ctrl = QM_CGR_TARG_UDP_CTRL_WRITE_BIT | pi;
++		cgr->cscn_targ_upd_ctrl = cpu_to_be16(pi |
++					QM_CGR_TARG_UDP_CTRL_WRITE_BIT);
+ 	else
+-		cgr->cscn_targ = val | QM_CGR_TARG_PORTAL(pi);
++		cgr->cscn_targ = cpu_to_be32(val | QM_CGR_TARG_PORTAL(pi));
+ }
+ 
+ static void qm_cgr_cscn_targ_clear(struct __qm_mc_cgr *cgr, int pi, u32 val)
+ {
+ 	if (qman_ip_rev >= QMAN_REV30)
+-		cgr->cscn_targ_upd_ctrl = pi;
++		cgr->cscn_targ_upd_ctrl = cpu_to_be16(pi);
+ 	else
+-		cgr->cscn_targ = val & ~QM_CGR_TARG_PORTAL(pi);
++		cgr->cscn_targ = cpu_to_be32(val & ~QM_CGR_TARG_PORTAL(pi));
+ }
+ 
+ static u8 qman_cgr_cpus[CGR_NUM];
+@@ -2315,8 +2320,8 @@ int qman_create_cgr(struct qman_cgr *cgr, u32 flags,
+ 			goto out;
+ 
+ 		qm_cgr_cscn_targ_set(&local_opts.cgr, PORTAL_IDX(p),
+-				     cgr_state.cgr.cscn_targ);
+-		local_opts.we_mask |= QM_CGR_WE_CSCN_TARG;
++				     be32_to_cpu(cgr_state.cgr.cscn_targ));
++		local_opts.we_mask |= cpu_to_be16(QM_CGR_WE_CSCN_TARG);
+ 
+ 		/* send init if flags indicate so */
+ 		if (flags & QMAN_CGR_FLAG_USE_INIT)
+@@ -2383,9 +2388,9 @@ int qman_delete_cgr(struct qman_cgr *cgr)
+ 		goto release_lock;
+ 	}
+ 
+-	local_opts.we_mask = QM_CGR_WE_CSCN_TARG;
++	local_opts.we_mask = cpu_to_be16(QM_CGR_WE_CSCN_TARG);
+ 	qm_cgr_cscn_targ_clear(&local_opts.cgr, PORTAL_IDX(p),
+-			       cgr_state.cgr.cscn_targ);
++			       be32_to_cpu(cgr_state.cgr.cscn_targ));
+ 
+ 	ret = qm_modify_cgr(cgr, 0, &local_opts);
+ 	if (ret)
+@@ -2835,7 +2840,7 @@ static int cgr_cleanup(u32 cgrid)
+ 			err = qman_query_fq(&fq, &fqd);
+ 			if (WARN_ON(err))
+ 				return err;
+-			if ((fqd.fq_ctrl & QM_FQCTRL_CGE) &&
++			if (be16_to_cpu(fqd.fq_ctrl) & QM_FQCTRL_CGE &&
+ 			    fqd.cgid == cgrid) {
+ 				pr_err("CRGID 0x%x is being used by FQID 0x%x, CGR will be leaked\n",
+ 				       cgrid, fq.fqid);
+diff --git a/drivers/soc/fsl/qbman/qman_priv.h b/drivers/soc/fsl/qbman/qman_priv.h
+index 5606d74c21d4..53685b59718e 100644
+--- a/drivers/soc/fsl/qbman/qman_priv.h
++++ b/drivers/soc/fsl/qbman/qman_priv.h
+@@ -73,20 +73,20 @@ struct qm_mcr_querycgr {
+ 	struct __qm_mc_cgr cgr; /* CGR fields */
+ 	u8 __reserved2[6];
+ 	u8 i_bcnt_hi;	/* high 8-bits of 40-bit "Instant" */
+-	u32 i_bcnt_lo;	/* low 32-bits of 40-bit */
++	__be32 i_bcnt_lo;	/* low 32-bits of 40-bit */
+ 	u8 __reserved3[3];
+ 	u8 a_bcnt_hi;	/* high 8-bits of 40-bit "Average" */
+-	u32 a_bcnt_lo;	/* low 32-bits of 40-bit */
+-	u32 cscn_targ_swp[4];
++	__be32 a_bcnt_lo;	/* low 32-bits of 40-bit */
++	__be32 cscn_targ_swp[4];
+ } __packed;
+ 
+ static inline u64 qm_mcr_querycgr_i_get64(const struct qm_mcr_querycgr *q)
+ {
+-	return ((u64)q->i_bcnt_hi << 32) | (u64)q->i_bcnt_lo;
++	return ((u64)q->i_bcnt_hi << 32) | be32_to_cpu(q->i_bcnt_lo);
+ }
+ static inline u64 qm_mcr_querycgr_a_get64(const struct qm_mcr_querycgr *q)
+ {
+-	return ((u64)q->a_bcnt_hi << 32) | (u64)q->a_bcnt_lo;
++	return ((u64)q->a_bcnt_hi << 32) | be32_to_cpu(q->a_bcnt_lo);
+ }
+ 
+ /* "Query FQ Non-Programmable Fields" */
+diff --git a/drivers/soc/fsl/qbman/qman_test_api.c b/drivers/soc/fsl/qbman/qman_test_api.c
+index dba6a80622ed..2895d062cf51 100644
+--- a/drivers/soc/fsl/qbman/qman_test_api.c
++++ b/drivers/soc/fsl/qbman/qman_test_api.c
+@@ -65,7 +65,7 @@ static void fd_init(struct qm_fd *fd)
+ {
+ 	qm_fd_addr_set64(fd, 0xabdeadbeefLLU);
+ 	qm_fd_set_contig_big(fd, 0x0000ffff);
+-	fd->cmd = 0xfeedf00d;
++	fd->cmd = cpu_to_be32(0xfeedf00d);
+ }
+ 
+ static void fd_inc(struct qm_fd *fd)
+@@ -86,7 +86,7 @@ static void fd_inc(struct qm_fd *fd)
+ 	len--;
+ 	qm_fd_set_param(fd, fmt, off, len);
+ 
+-	fd->cmd++;
++	fd->cmd = cpu_to_be32(be32_to_cpu(fd->cmd) + 1);
+ }
+ 
+ /* The only part of the 'fd' we can't memcmp() is the ppid */
+diff --git a/drivers/soc/fsl/qbman/qman_test_stash.c b/drivers/soc/fsl/qbman/qman_test_stash.c
+index f8d25faf4d8a..b9795f39bcc8 100644
+--- a/drivers/soc/fsl/qbman/qman_test_stash.c
++++ b/drivers/soc/fsl/qbman/qman_test_stash.c
+@@ -406,8 +406,9 @@ static int init_handler(void *h)
+ 		goto failed;
+ 	}
+ 	memset(&opts, 0, sizeof(opts));
+-	opts.we_mask = QM_INITFQ_WE_FQCTRL | QM_INITFQ_WE_CONTEXTA;
+-	opts.fqd.fq_ctrl = QM_FQCTRL_CTXASTASHING;
++	opts.we_mask = cpu_to_be16(QM_INITFQ_WE_FQCTRL |
++				   QM_INITFQ_WE_CONTEXTA);
++	opts.fqd.fq_ctrl = cpu_to_be16(QM_FQCTRL_CTXASTASHING);
+ 	qm_fqd_set_stashing(&opts.fqd, 0, STASH_DATA_CL, STASH_CTX_CL);
+ 	err = qman_init_fq(&handler->rx, QMAN_INITFQ_FLAG_SCHED |
+ 			   QMAN_INITFQ_FLAG_LOCAL, &opts);
+diff --git a/include/soc/fsl/qman.h b/include/soc/fsl/qman.h
+index d01d5a358945..3d4df74a96de 100644
+--- a/include/soc/fsl/qman.h
++++ b/include/soc/fsl/qman.h
+@@ -244,11 +244,11 @@ static inline int qm_sg_entry_get_off(const struct qm_sg_entry *sg)
+ struct qm_dqrr_entry {
+ 	u8 verb;
+ 	u8 stat;
+-	u16 seqnum;	/* 15-bit */
++	__be16 seqnum;	/* 15-bit */
+ 	u8 tok;
+ 	u8 __reserved2[3];
+-	u32 fqid;	/* 24-bit */
+-	u32 context_b;
++	__be32 fqid;	/* 24-bit */
++	__be32 context_b;
+ 	struct qm_fd fd;
+ 	u8 __reserved4[32];
+ } __packed;
+@@ -264,8 +264,8 @@ struct qm_dqrr_entry {
+ 
+ /* 'fqid' is a 24-bit field in every h/w descriptor */
+ #define QM_FQID_MASK	GENMASK(23, 0)
+-#define qm_fqid_set(p, v) ((p)->fqid = ((v) & QM_FQID_MASK))
+-#define qm_fqid_get(p)    ((p)->fqid & QM_FQID_MASK)
++#define qm_fqid_set(p, v) ((p)->fqid = cpu_to_be32((v) & QM_FQID_MASK))
++#define qm_fqid_get(p)    (be32_to_cpu((p)->fqid) & QM_FQID_MASK)
+ 
+ /* "ERN Message Response" */
+ /* "FQ State Change Notification" */
+@@ -277,11 +277,11 @@ union qm_mr_entry {
+ 	struct {
+ 		u8 verb;
+ 		u8 dca;
+-		u16 seqnum;
++		__be16 seqnum;
+ 		u8 rc;		/* Rej Code: 8-bit */
+ 		u8 __reserved[3];
+-		u32 fqid;	/* 24-bit */
+-		u32 tag;
++		__be32 fqid;	/* 24-bit */
++		__be32 tag;
+ 		struct qm_fd fd;
+ 		u8 __reserved1[32];
+ 	} __packed ern;
+@@ -289,8 +289,8 @@ union qm_mr_entry {
+ 		u8 verb;
+ 		u8 fqs;		/* Frame Queue Status */
+ 		u8 __reserved1[6];
+-		u32 fqid;	/* 24-bit */
+-		u32 context_b;
++		__be32 fqid;	/* 24-bit */
++		__be32 context_b;
+ 		u8 __reserved2[48];
+ 	} __packed fq;		/* FQRN/FQRNI/FQRL/FQPN */
+ };
+@@ -409,8 +409,8 @@ static inline u64 qm_fqd_context_a_get64(const struct qm_fqd *fqd)
+ 
+ static inline void qm_fqd_stashing_set64(struct qm_fqd *fqd, u64 addr)
+ {
+-	fqd->context_a.context_hi = upper_32_bits(addr);
+-	fqd->context_a.context_lo = lower_32_bits(addr);
++	fqd->context_a.context_hi = cpu_to_be16(upper_32_bits(addr));
++	fqd->context_a.context_lo = cpu_to_be32(lower_32_bits(addr));
+ }
+ 
+ static inline void qm_fqd_context_a_set64(struct qm_fqd *fqd, u64 addr)
+@@ -525,7 +525,7 @@ static inline int qm_fqd_get_wq(const struct qm_fqd *fqd)
+  */
+ struct qm_cgr_wr_parm {
+ 	/* MA[24-31], Mn[19-23], SA[12-18], Sn[6-11], Pn[0-5] */
+-	u32 word;
++	__be32 word;
+ };
+ /*
+  * This struct represents the 13-bit "CS_THRES" CGR field. In the corresponding
+@@ -536,7 +536,7 @@ struct qm_cgr_wr_parm {
+  */
+ struct qm_cgr_cs_thres {
+ 	/* _res[13-15], TA[5-12], Tn[0-4] */
+-	u16 word;
++	__be16 word;
+ };
+ /*
+  * This identical structure of CGR fields is present in the "Init/Modify CGR"
+@@ -553,10 +553,10 @@ struct __qm_mc_cgr {
+ 	u8 cscn_en;	/* boolean, use QM_CGR_EN */
+ 	union {
+ 		struct {
+-			u16 cscn_targ_upd_ctrl; /* use QM_CGR_TARG_UDP_* */
+-			u16 cscn_targ_dcp_low;
++			__be16 cscn_targ_upd_ctrl; /* use QM_CGR_TARG_UDP_* */
++			__be16 cscn_targ_dcp_low;
+ 		};
+-		u32 cscn_targ;	/* use QM_CGR_TARG_* */
++		__be32 cscn_targ;	/* use QM_CGR_TARG_* */
+ 	};
+ 	u8 cstd_en;	/* boolean, use QM_CGR_EN */
+ 	u8 cs;		/* boolean, only used in query response */
+@@ -572,7 +572,9 @@ struct __qm_mc_cgr {
+ /* Convert CGR thresholds to/from "cs_thres" format */
+ static inline u64 qm_cgr_cs_thres_get64(const struct qm_cgr_cs_thres *th)
+ {
+-	return ((th->word >> 5) & 0xff) << (th->word & 0x1f);
++	int thres = be16_to_cpu(th->word);
++
++	return ((thres >> 5) & 0xff) << (thres & 0x1f);
+ }
+ 
+ static inline int qm_cgr_cs_thres_set64(struct qm_cgr_cs_thres *th, u64 val,
+@@ -588,23 +590,23 @@ static inline int qm_cgr_cs_thres_set64(struct qm_cgr_cs_thres *th, u64 val,
+ 		if (roundup && oddbit)
+ 			val++;
+ 	}
+-	th->word = ((val & 0xff) << 5) | (e & 0x1f);
++	th->word = cpu_to_be16(((val & 0xff) << 5) | (e & 0x1f));
+ 	return 0;
+ }
+ 
+ /* "Initialize FQ" */
+ struct qm_mcc_initfq {
+ 	u8 __reserved1[2];
+-	u16 we_mask;	/* Write Enable Mask */
+-	u32 fqid;	/* 24-bit */
+-	u16 count;	/* Initialises 'count+1' FQDs */
++	__be16 we_mask;	/* Write Enable Mask */
++	__be32 fqid;	/* 24-bit */
++	__be16 count;	/* Initialises 'count+1' FQDs */
+ 	struct qm_fqd fqd; /* the FQD fields go here */
+ 	u8 __reserved2[30];
+ } __packed;
+ /* "Initialize/Modify CGR" */
+ struct qm_mcc_initcgr {
+ 	u8 __reserve1[2];
+-	u16 we_mask;	/* Write Enable Mask */
++	__be16 we_mask;	/* Write Enable Mask */
+ 	struct __qm_mc_cgr cgr;	/* CGR fields */
+ 	u8 __reserved2[2];
+ 	u8 cgid;
+-- 
+2.11.0
+

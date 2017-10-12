@@ -1,0 +1,83 @@
+From 2b314dba0438bd725a6ba8d164bf994c63b25087 Mon Sep 17 00:00:00 2001
+From: Roy Pledge <roy.pledge@nxp.com>
+Date: Fri, 5 May 2017 17:21:39 -0400
+Subject: [PATCH] soc/fsl/qbman: Check if CPU is offline when initializing
+ portals
+
+If the affine portal for a specific CPU is offline at boot time
+affine its interrupt to CPU 0. If the CPU is later brought online
+the hotplug handler will correctly adjust the affinity.
+
+Signed-off-by: Roy Pledge <roy.pledge@nxp.com>
+---
+ drivers/soc/fsl/qbman/bman.c | 17 +++++++++++++----
+ drivers/soc/fsl/qbman/qman.c | 18 +++++++++++++-----
+ 2 files changed, 26 insertions(+), 9 deletions(-)
+
+diff --git a/drivers/soc/fsl/qbman/bman.c b/drivers/soc/fsl/qbman/bman.c
+index 1fa9099e3377..b72a92c37ead 100644
+--- a/drivers/soc/fsl/qbman/bman.c
++++ b/drivers/soc/fsl/qbman/bman.c
+@@ -560,10 +560,19 @@ static int bman_create_portal(struct bman_portal *portal,
+ 		dev_err(c->dev, "request_irq() failed\n");
+ 		goto fail_irq;
+ 	}
+-	if (c->cpu != -1 && irq_can_set_affinity(c->irq) &&
+-	    irq_set_affinity(c->irq, cpumask_of(c->cpu))) {
+-		dev_err(c->dev, "irq_set_affinity() failed\n");
+-		goto fail_affinity;
++	if (cpu_online(c->cpu) && c->cpu != -1 &&
++	    irq_can_set_affinity(c->irq)) {
++		if (irq_set_affinity(c->irq, cpumask_of(c->cpu))) {
++			dev_err(c->dev, "irq_set_affinity() failed %d\n",
++				c->cpu);
++			goto fail_affinity;
++		}
++	} else {
++		/* CPU is offline, direct IRQ to CPU 0 */
++		if (irq_set_affinity(c->irq, cpumask_of(0))) {
++			dev_err(c->dev, "irq_set_affinity() cpu 0 failed\n");
++			goto fail_affinity;
++		}
+ 	}
+ 
+ 	/* Need RCR to be empty before continuing */
+diff --git a/drivers/soc/fsl/qbman/qman.c b/drivers/soc/fsl/qbman/qman.c
+index aebcf16e900a..b1b1268e59cb 100644
+--- a/drivers/soc/fsl/qbman/qman.c
++++ b/drivers/soc/fsl/qbman/qman.c
+@@ -941,7 +941,6 @@ static inline int qm_mc_result_timeout(struct qm_portal *portal,
+ 			break;
+ 		udelay(1);
+ 	} while (--timeout);
+-
+ 	return timeout;
+ }
+ 
+@@ -1218,10 +1217,19 @@ static int qman_create_portal(struct qman_portal *portal,
+ 		dev_err(c->dev, "request_irq() failed\n");
+ 		goto fail_irq;
+ 	}
+-	if (c->cpu != -1 && irq_can_set_affinity(c->irq) &&
+-	    irq_set_affinity(c->irq, cpumask_of(c->cpu))) {
+-		dev_err(c->dev, "irq_set_affinity() failed\n");
+-		goto fail_affinity;
++	if (cpu_online(c->cpu) && c->cpu != -1 &&
++	    irq_can_set_affinity(c->irq)) {
++		if (irq_set_affinity(c->irq, cpumask_of(c->cpu))) {
++			dev_err(c->dev, "irq_set_affinity() failed %d\n",
++				c->cpu);
++			goto fail_affinity;
++		}
++	} else {
++		/* CPU is offline, direct IRQ to CPU 0 */
++		if (irq_set_affinity(c->irq, cpumask_of(0))) {
++			dev_err(c->dev, "irq_set_affinity() cpu 0 failed\n");
++			goto fail_affinity;
++		}
+ 	}
+ 
+ 	/* Need EQCR to be empty before continuing */
+-- 
+2.11.0
+

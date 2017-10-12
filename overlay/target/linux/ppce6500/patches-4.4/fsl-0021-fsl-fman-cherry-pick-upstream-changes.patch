@@ -1,0 +1,39 @@
+From c58fb261f3b53077ec8434ec6d7e028c1dd541b3 Mon Sep 17 00:00:00 2001
+From: Madalin Bucur <madalin.bucur@nxp.com>
+Date: Fri, 14 Oct 2016 17:01:51 +0300
+Subject: [PATCH 21/57] fsl/fman: cherry-pick upstream changes
+
+Cherry-pick upstream fsl/fman changes:
+  commit 99c1790e5bbd31fe2b646bff868a55a13b1eeeb2
+  Author: Michael Ellerman <mpe@ellerman.id.au>
+  Date:   Sat Sep 10 19:59:05 2016 +1000
+
+    net: Remove NO_IRQ from powerpc-only network drivers
+
+    We'd like to eventually remove NO_IRQ on powerpc, so remove usages of it
+    from powerpc-only drivers.
+
+    Signed-off-by: Michael Ellerman <mpe@ellerman.id.au>
+    Signed-off-by: David S. Miller <davem@davemloft.net>
+
+Signed-off-by: Madalin Bucur <madalin.bucur@nxp.com>
+---
+ drivers/net/ethernet/freescale/fman/fman_mac.h | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/net/ethernet/freescale/fman/fman_mac.h b/drivers/net/ethernet/freescale/fman/fman_mac.h
+index 8ddeedb..ddf0260 100644
+--- a/drivers/net/ethernet/freescale/fman/fman_mac.h
++++ b/drivers/net/ethernet/freescale/fman/fman_mac.h
+@@ -192,7 +192,7 @@ struct fman_mac_params {
+ 	/* A handle to the FM object this port related to */
+ 	void *fm;
+ 	/* MDIO exceptions interrupt source - not valid for all
+-	 * MACs; MUST be set to 'NO_IRQ' for MACs that don't have
++	 * MACs; MUST be set to 0 for MACs that don't have
+ 	 * mdio-irq, or for polling
+ 	 */
+ 	void *dev_id; /* device cookie used by the exception cbs */
+-- 
+2.10.2
+

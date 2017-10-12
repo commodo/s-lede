@@ -1,0 +1,44 @@
+From 1763413ac2c15f80fa2c2e308ecbf1a1b550a4c3 Mon Sep 17 00:00:00 2001
+From: Michael Walle <michael@walle.cc>
+Date: Mon, 20 Feb 2017 16:54:18 +0100
+Subject: [PATCH] dpaa_eth: implement ioctl() for PHY-related ops
+
+This commit adds the ndo_do_ioctl() callback which allows the userspace to
+access PHY registers, for example. This will make mii-diag and similar
+tools work.
+
+Signed-off-by: Michael Walle <michael@walle.cc>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+---
+ drivers/net/ethernet/freescale/dpaa/dpaa_eth.c | 8 ++++++++
+ 1 file changed, 8 insertions(+)
+
+diff --git a/drivers/net/ethernet/freescale/dpaa/dpaa_eth.c b/drivers/net/ethernet/freescale/dpaa/dpaa_eth.c
+index d239ad8..b417be5 100644
+--- a/drivers/net/ethernet/freescale/dpaa/dpaa_eth.c
++++ b/drivers/net/ethernet/freescale/dpaa/dpaa_eth.c
+@@ -2382,6 +2382,13 @@ static int dpaa_eth_stop(struct net_device *net_dev)
+ 	return err;
+ }
+ 
++static int dpaa_ioctl(struct net_device *net_dev, struct ifreq *rq, int cmd)
++{
++	if (!net_dev->phydev)
++		return -EINVAL;
++	return phy_mii_ioctl(net_dev->phydev, rq, cmd);
++}
++
+ static struct net_device_ops dpaa_ops = {
+ 	.ndo_open = dpaa_open,
+ 	.ndo_start_xmit = dpaa_start_xmit,
+@@ -2394,6 +2401,7 @@ static struct net_device_ops dpaa_ops = {
+ 	.ndo_set_rx_mode = dpaa_set_rx_mode,
+ 	.ndo_set_features = dpaa_set_features,
+ 	.ndo_fix_features = dpaa_fix_features,
++	.ndo_do_ioctl = dpaa_ioctl,
+ };
+ 
+ static int dpaa_napi_add(struct net_device *net_dev)
+-- 
+2.11.0
+

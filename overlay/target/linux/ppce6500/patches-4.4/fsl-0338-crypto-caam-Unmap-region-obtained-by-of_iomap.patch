@@ -1,0 +1,28 @@
+From 3387879524ec07fd9ba371eddd17e717abdd5e4f Mon Sep 17 00:00:00 2001
+From: Arvind Yadav <arvind.yadav.cs@gmail.com>
+Date: Wed, 28 Sep 2016 16:01:42 +0530
+Subject: [PATCH] crypto: caam - Unmap region obtained by of_iomap
+
+Free memory mapping, if probe is not successful.
+
+Signed-off-by: Arvind Yadav <arvind.yadav.cs@gmail.com>
+Signed-off-by: Herbert Xu <herbert@gondor.apana.org.au>
+---
+ drivers/crypto/caam/jr.c | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/drivers/crypto/caam/jr.c b/drivers/crypto/caam/jr.c
+index 320228875e9a..757c27f9953d 100644
+--- a/drivers/crypto/caam/jr.c
++++ b/drivers/crypto/caam/jr.c
+@@ -506,6 +506,7 @@ static int caam_jr_probe(struct platform_device *pdev)
+ 	error = caam_jr_init(jrdev); /* now turn on hardware */
+ 	if (error) {
+ 		irq_dispose_mapping(jrpriv->irq);
++		iounmap(ctrl);
+ 		return error;
+ 	}
+ 
+-- 
+2.11.0
+

@@ -1,0 +1,65 @@
+From 2f28d218d4b82e0eb5c437f25004a4d36e32ab35 Mon Sep 17 00:00:00 2001
+From: Madalin Bucur <madalin.bucur@nxp.com>
+Date: Wed, 16 Nov 2016 16:40:15 +0200
+Subject: [PATCH] soc/qman: Replace of_get_property() with portable equivalent
+
+Use arch portable of_property_read_u32() instead, which takes
+care of endianness conversions.
+
+Signed-off-by: Madalin Bucur <madalin.bucur@nxp.com>
+Signed-off-by: Claudiu Manoil <claudiu.manoil@nxp.com>
+Signed-off-by: Scott Wood <oss@buserror.net>
+---
+ drivers/soc/fsl/qbman/dpaa_sys.h    |  1 +
+ drivers/soc/fsl/qbman/qman_portal.c | 12 ++++++------
+ 2 files changed, 7 insertions(+), 6 deletions(-)
+
+diff --git a/drivers/soc/fsl/qbman/dpaa_sys.h b/drivers/soc/fsl/qbman/dpaa_sys.h
+index b63fd72295c6..2eaf3184f61d 100644
+--- a/drivers/soc/fsl/qbman/dpaa_sys.h
++++ b/drivers/soc/fsl/qbman/dpaa_sys.h
+@@ -38,6 +38,7 @@
+ #include <linux/kthread.h>
+ #include <linux/vmalloc.h>
+ #include <linux/platform_device.h>
++#include <linux/of.h>
+ #include <linux/of_reserved_mem.h>
+ #include <linux/prefetch.h>
+ #include <linux/genalloc.h>
+diff --git a/drivers/soc/fsl/qbman/qman_portal.c b/drivers/soc/fsl/qbman/qman_portal.c
+index 148614388fca..0c3e8adae647 100644
+--- a/drivers/soc/fsl/qbman/qman_portal.c
++++ b/drivers/soc/fsl/qbman/qman_portal.c
+@@ -238,9 +238,9 @@ static int qman_portal_probe(struct platform_device *pdev)
+ 	struct device_node *node = dev->of_node;
+ 	struct qm_portal_config *pcfg;
+ 	struct resource *addr_phys[2];
+-	const u32 *channel;
+ 	void __iomem *va;
+-	int irq, len, cpu;
++	int irq, cpu, err;
++	u32 val;
+ 
+ 	pcfg = devm_kmalloc(dev, sizeof(*pcfg), GFP_KERNEL);
+ 	if (!pcfg)
+@@ -264,13 +264,13 @@ static int qman_portal_probe(struct platform_device *pdev)
+ 		return -ENXIO;
+ 	}
+ 
+-	channel = of_get_property(node, "cell-index", &len);
+-	if (!channel || (len != 4)) {
++	err = of_property_read_u32(node, "cell-index", &val);
++	if (err) {
+ 		dev_err(dev, "Can't get %s property 'cell-index'\n",
+ 			node->full_name);
+-		return -ENXIO;
++		return err;
+ 	}
+-	pcfg->channel = *channel;
++	pcfg->channel = val;
+ 	pcfg->cpu = -1;
+ 	irq = platform_get_irq(pdev, 0);
+ 	if (irq <= 0) {
+-- 
+2.11.0
+

@@ -1,0 +1,37 @@
+From 0fbb0f24dde8759925fc56e9dbc6a5b2cbba99c4 Mon Sep 17 00:00:00 2001
+From: Roy Pledge <roy.pledge@nxp.com>
+Date: Wed, 4 Jan 2017 13:21:30 +0200
+Subject: [PATCH] dpaa_eth: Initialize CGR structure before init
+
+The QBMan CGR options needs to be zeroed before calling the init
+function
+
+Signed-off-by: Roy Pledge <roy.pledge@nxp.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+---
+ drivers/net/ethernet/freescale/dpaa/dpaa_eth.c | 2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/drivers/net/ethernet/freescale/dpaa/dpaa_eth.c b/drivers/net/ethernet/freescale/dpaa/dpaa_eth.c
+index 77517aa3e8d9..c9b7ad65e563 100644
+--- a/drivers/net/ethernet/freescale/dpaa/dpaa_eth.c
++++ b/drivers/net/ethernet/freescale/dpaa/dpaa_eth.c
+@@ -733,6 +733,7 @@ static int dpaa_eth_cgr_init(struct dpaa_priv *priv)
+ 	priv->cgr_data.cgr.cb = dpaa_eth_cgscn;
+ 
+ 	/* Enable Congestion State Change Notifications and CS taildrop */
++	memset(&initcgr, 0, sizeof(initcgr));
+ 	initcgr.we_mask = cpu_to_be16(QM_CGR_WE_CSCN_EN | QM_CGR_WE_CS_THRES);
+ 	initcgr.cgr.cscn_en = QM_CGR_EN;
+ 
+@@ -2422,6 +2423,7 @@ static int dpaa_ingress_cgr_init(struct dpaa_priv *priv)
+ 	}
+ 
+ 	/* Enable CS TD, but disable Congestion State Change Notifications. */
++	memset(&initcgr, 0, sizeof(initcgr));
+ 	initcgr.we_mask = cpu_to_be16(QM_CGR_WE_CS_THRES);
+ 	initcgr.cgr.cscn_en = QM_CGR_EN;
+ 	cs_th = DPAA_INGRESS_CS_THRESHOLD;
+-- 
+2.11.0
+

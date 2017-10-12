@@ -1,0 +1,29 @@
+From 5567e989198b5a8d78f9b5868e48fc9f4726bdd5 Mon Sep 17 00:00:00 2001
+From: Madalin Bucur <madalin.bucur@nxp.com>
+Date: Mon, 19 Jun 2017 18:04:16 +0300
+Subject: [PATCH] fsl/fman: propagate dma_ops
+
+Make sure dma_ops are set, to be later used by the Ethernet driver.
+
+Signed-off-by: Madalin Bucur <madalin.bucur@nxp.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+---
+ drivers/net/ethernet/freescale/fman/mac.c | 2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/drivers/net/ethernet/freescale/fman/mac.c b/drivers/net/ethernet/freescale/fman/mac.c
+index 0b31f8502ada..6e67d22fd0d5 100644
+--- a/drivers/net/ethernet/freescale/fman/mac.c
++++ b/drivers/net/ethernet/freescale/fman/mac.c
+@@ -623,6 +623,8 @@ static struct platform_device *dpaa_eth_add_device(int fman_id,
+ 		goto no_mem;
+ 	}
+ 
++	set_dma_ops(&pdev->dev, get_dma_ops(priv->dev));
++
+ 	ret = platform_device_add_data(pdev, &data, sizeof(data));
+ 	if (ret)
+ 		goto err;
+-- 
+2.11.0
+

@@ -1,0 +1,41 @@
+From 9bb33771db29885bcfb365ef3a35f9a2a2cf8654 Mon Sep 17 00:00:00 2001
+From: Madalin Bucur <madalin.bucur@nxp.com>
+Date: Fri, 14 Oct 2016 16:53:04 +0300
+Subject: [PATCH 19/57] fsl/fman: cherry-pick upstream change
+
+cherry-pick of fsl/fman changes in:
+
+ commit c01e01597cbd0cf0571c2b05bf9e2245afb4478d
+ Author: Masanari Iida <standby24x7@gmail.com>
+ Date:   Wed Apr 20 00:27:33 2016 +0900
+
+    treewide: Fix typos in printk
+
+    This patch fix spelling typos in printk from various part
+    of the codes.
+
+    Signed-off-by: Masanari Iida <standby24x7@gmail.com>
+    Acked-by: Randy Dunlap <rdunlap@infradead.org>
+    Signed-off-by: Jiri Kosina <jkosina@suse.cz>
+
+Signed-off-by: Madalin Bucur <madalin.bucur@nxp.com>
+---
+ drivers/net/ethernet/freescale/fman/fman.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/net/ethernet/freescale/fman/fman.c b/drivers/net/ethernet/freescale/fman/fman.c
+index ea83712..bcb9dcc 100644
+--- a/drivers/net/ethernet/freescale/fman/fman.c
++++ b/drivers/net/ethernet/freescale/fman/fman.c
+@@ -2772,7 +2772,7 @@ static struct fman *read_dts_node(struct platform_device *of_dev)
+ 	/* Get the FM address */
+ 	res = platform_get_resource(of_dev, IORESOURCE_MEM, 0);
+ 	if (!res) {
+-		dev_err(&of_dev->dev, "%s: Can't get FMan memory resouce\n",
++		dev_err(&of_dev->dev, "%s: Can't get FMan memory resource\n",
+ 			__func__);
+ 		goto fman_node_put;
+ 	}
+-- 
+2.10.2
+

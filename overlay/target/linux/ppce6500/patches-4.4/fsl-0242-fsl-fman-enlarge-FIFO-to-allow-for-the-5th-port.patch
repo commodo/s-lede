@@ -1,0 +1,26 @@
+From de8b1e41a251577bdd6eb44a7702473fb22ae497 Mon Sep 17 00:00:00 2001
+From: Madalin Bucur <madalin.bucur@nxp.com>
+Date: Tue, 14 Feb 2017 15:09:07 +0200
+Subject: [PATCH] fsl/fman: enlarge FIFO to allow for the 5th port
+
+Signed-off-by: Madalin Bucur <madalin.bucur@nxp.com>
+---
+ drivers/net/ethernet/freescale/fman/fman.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/net/ethernet/freescale/fman/fman.c b/drivers/net/ethernet/freescale/fman/fman.c
+index d7559306226d..4aefe2438969 100644
+--- a/drivers/net/ethernet/freescale/fman/fman.c
++++ b/drivers/net/ethernet/freescale/fman/fman.c
+@@ -1212,7 +1212,7 @@ static int fill_soc_specific_params(struct fman_state_struct *state)
+ 		state->max_num_of_open_dmas	= 32;
+ 		state->fm_port_num_of_cg	= 256;
+ 		state->num_of_rx_ports	= 6;
+-		state->total_fifo_size	= 122 * 1024;
++		state->total_fifo_size	= 136 * 1024;
+ 		break;
+ 
+ 	case 2:
+-- 
+2.11.0
+

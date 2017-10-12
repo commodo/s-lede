@@ -1,0 +1,86 @@
+From 23b0984e0e8bb522e71540101933e62304f52174 Mon Sep 17 00:00:00 2001
+From: Claudiu Manoil <claudiu.manoil@nxp.com>
+Date: Thu, 22 Sep 2016 18:04:12 +0300
+Subject: [PATCH 05/57] arch/powerpc: Add CONFIG_FSL_DPAA to
+ corenetXX_smp_defconfig
+
+Enable the drivers on the powerpc arch.
+
+Signed-off-by: Roy Pledge <roy.pledge@nxp.com>
+Signed-off-by: Claudiu Manoil <claudiu.manoil@nxp.com>
+Signed-off-by: Scott Wood <oss@buserror.net>
+
+Conflicts:
+	drivers/soc/Kconfig
+	drivers/soc/fsl/Makefile
+---
+ arch/powerpc/Makefile            | 4 ++--
+ arch/powerpc/configs/dpaa.config | 1 +
+ drivers/soc/Kconfig              | 1 +
+ drivers/soc/Makefile             | 1 +
+ drivers/soc/fsl/Makefile         | 5 +++++
+ 5 files changed, 10 insertions(+), 2 deletions(-)
+ create mode 100644 arch/powerpc/configs/dpaa.config
+ create mode 100644 drivers/soc/fsl/Makefile
+
+diff --git a/arch/powerpc/Makefile b/arch/powerpc/Makefile
+index 96efd82..38fa38c 100644
+--- a/arch/powerpc/Makefile
++++ b/arch/powerpc/Makefile
+@@ -303,12 +303,12 @@ mpc85xx_smp_defconfig:
+ PHONY += corenet32_smp_defconfig
+ corenet32_smp_defconfig:
+ 	$(call merge_into_defconfig,corenet_basic_defconfig,\
+-		85xx-32bit 85xx-smp 85xx-hw fsl-emb-nonhw)
++		85xx-32bit 85xx-smp 85xx-hw fsl-emb-nonhw dpaa)
+ 
+ PHONY += corenet64_smp_defconfig
+ corenet64_smp_defconfig:
+ 	$(call merge_into_defconfig,corenet_basic_defconfig,\
+-		85xx-64bit 85xx-smp altivec 85xx-hw fsl-emb-nonhw)
++		85xx-64bit 85xx-smp altivec 85xx-hw fsl-emb-nonhw dpaa)
+ 
+ define archhelp
+   @echo '* zImage          - Build default images selected by kernel config'
+diff --git a/arch/powerpc/configs/dpaa.config b/arch/powerpc/configs/dpaa.config
+new file mode 100644
+index 0000000..efa99c0
+--- /dev/null
++++ b/arch/powerpc/configs/dpaa.config
+@@ -0,0 +1 @@
++CONFIG_FSL_DPAA=y
+diff --git a/drivers/soc/Kconfig b/drivers/soc/Kconfig
+index 4e853ed..6662180 100644
+--- a/drivers/soc/Kconfig
++++ b/drivers/soc/Kconfig
+@@ -1,6 +1,7 @@
+ menu "SOC (System On Chip) specific Drivers"
+ 
+ source "drivers/soc/brcmstb/Kconfig"
++source "drivers/soc/fsl/qbman/Kconfig"
+ source "drivers/soc/mediatek/Kconfig"
+ source "drivers/soc/qcom/Kconfig"
+ source "drivers/soc/rockchip/Kconfig"
+diff --git a/drivers/soc/Makefile b/drivers/soc/Makefile
+index f2ba2e9..6d0855e 100644
+--- a/drivers/soc/Makefile
++++ b/drivers/soc/Makefile
+@@ -11,3 +11,4 @@ obj-$(CONFIG_ARCH_SUNXI)	+= sunxi/
+ obj-$(CONFIG_ARCH_TEGRA)	+= tegra/
+ obj-$(CONFIG_SOC_TI)		+= ti/
+ obj-$(CONFIG_PLAT_VERSATILE)	+= versatile/
++obj-$(CONFIG_FSL_DPAA)          += fsl/
+diff --git a/drivers/soc/fsl/Makefile b/drivers/soc/fsl/Makefile
+new file mode 100644
+index 0000000..648de43
+--- /dev/null
++++ b/drivers/soc/fsl/Makefile
+@@ -0,0 +1,5 @@
++#
++# Makefile for the Linux Kernel SOC fsl specific device drivers
++#
++
++obj-$(CONFIG_FSL_DPAA)                 += qbman/
+-- 
+2.10.2
+

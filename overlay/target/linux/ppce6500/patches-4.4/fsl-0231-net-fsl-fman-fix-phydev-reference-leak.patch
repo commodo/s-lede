@@ -1,0 +1,32 @@
+From 966830340302fd79c51e2a3b9bccca9427256dee Mon Sep 17 00:00:00 2001
+From: Johan Hovold <johan@kernel.org>
+Date: Thu, 24 Nov 2016 19:21:29 +0100
+Subject: [PATCH] net: fsl/fman: fix phydev reference leak
+
+Make sure to drop the reference taken by of_phy_find_device() during
+initialisation when later freeing the struct fman_mac.
+
+Fixes: 57ba4c9b56d8 ("fsl/fman: Add FMan MAC support")
+Signed-off-by: Johan Hovold <johan@kernel.org>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+---
+ drivers/net/ethernet/freescale/fman/fman_memac.c | 3 +++
+ 1 file changed, 3 insertions(+)
+
+diff --git a/drivers/net/ethernet/freescale/fman/fman_memac.c b/drivers/net/ethernet/freescale/fman/fman_memac.c
+index 53ef51e3bd9e..71a5ded9d1de 100644
+--- a/drivers/net/ethernet/freescale/fman/fman_memac.c
++++ b/drivers/net/ethernet/freescale/fman/fman_memac.c
+@@ -1107,6 +1107,9 @@ int memac_free(struct fman_mac *memac)
+ {
+ 	free_init_resources(memac);
+ 
++	if (memac->pcsphy)
++		put_device(&memac->pcsphy->dev);
++
+ 	kfree(memac->memac_drv_param);
+ 	kfree(memac);
+ 
+-- 
+2.11.0
+

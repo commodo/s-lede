@@ -1,0 +1,37 @@
+From fec8186273accbb91b92e59e3c5e8ba8b4e4e3c5 Mon Sep 17 00:00:00 2001
+From: Igal Liberman <igal.liberman@freescale.com>
+Date: Thu, 5 Nov 2015 12:23:06 +0200
+Subject: [PATCH 56/57] powerpc/mpc85xx: Update B4 FMan MURAM size
+
+FMan V3H has 2 different MURAM sizes:
+    In B4860/4420 the MURAM size is 512KB.
+    In T4240 and T2080 the MURAM size is 384KB.
+
+The MURAM size in FMan V3H device tree is 384KB.
+This patch updates the MURAM size for B4 to 512KB.
+
+Signed-off-by: Igal Liberman <igal.liberman@freescale.com>
+Signed-off-by: Scott Wood <scottwood@freescale.com>
+---
+ arch/powerpc/boot/dts/fsl/b4si-post.dtsi | 5 +++++
+ 1 file changed, 5 insertions(+)
+
+diff --git a/arch/powerpc/boot/dts/fsl/b4si-post.dtsi b/arch/powerpc/boot/dts/fsl/b4si-post.dtsi
+index 74866ac..1b33f51 100644
+--- a/arch/powerpc/boot/dts/fsl/b4si-post.dtsi
++++ b/arch/powerpc/boot/dts/fsl/b4si-post.dtsi
+@@ -474,6 +474,11 @@
+ 	fman@400000 {
+ 		interrupts = <96 2 0 0>, <16 2 1 30>;
+ 
++		muram@0 {
++			compatible = "fsl,fman-muram";
++			reg = <0x0 0x80000>;
++		};
++
+ 		enet0: ethernet@e0000 {
+ 		};
+ 
+-- 
+2.10.2
+

@@ -1,0 +1,27 @@
+From b018f4eb05cac8d1f77fa702163cd5b4599b792a Mon Sep 17 00:00:00 2001
+From: Madalin Bucur <madalin.bucur@nxp.com>
+Date: Tue, 28 Jun 2016 15:32:44 +0300
+Subject: [PATCH 29/57] fsl/fman: check pcsphy pointer before use
+
+Signed-off-by: Madalin Bucur <madalin.bucur@nxp.com>
+---
+ drivers/net/ethernet/freescale/fman/fman_memac.c | 3 +++
+ 1 file changed, 3 insertions(+)
+
+diff --git a/drivers/net/ethernet/freescale/fman/fman_memac.c b/drivers/net/ethernet/freescale/fman/fman_memac.c
+index eab6ec9..583db9d9 100644
+--- a/drivers/net/ethernet/freescale/fman/fman_memac.c
++++ b/drivers/net/ethernet/freescale/fman/fman_memac.c
+@@ -507,6 +507,9 @@ static void setup_sgmii_internal_phy(struct fman_mac *memac,
+ {
+ 	u16 tmp_reg16;
+ 
++	if (WARN_ON(!memac->pcsphy))
++		return;
++
+ 	/* SGMII mode */
+ 	tmp_reg16 = IF_MODE_SGMII_EN;
+ 	if (!fixed_link)
+-- 
+2.10.2
+

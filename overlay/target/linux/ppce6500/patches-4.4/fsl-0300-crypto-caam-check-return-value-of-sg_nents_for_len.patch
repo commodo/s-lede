@@ -1,0 +1,88 @@
+From f9970c2865d300bd0bb4ba006a0283a8ffa51ada Mon Sep 17 00:00:00 2001
+From: LABBE Corentin <clabbe.montjoie@gmail.com>
+Date: Wed, 4 Nov 2015 21:13:38 +0100
+Subject: [PATCH] crypto: caam - check return value of sg_nents_for_len
+
+The sg_nents_for_len() function could fail, this patch add a check for
+its return value.
+We do the same for sg_count since it use sg_nents_for_len().
+
+Signed-off-by: LABBE Corentin <clabbe.montjoie@gmail.com>
+Signed-off-by: Herbert Xu <herbert@gondor.apana.org.au>
+---
+ drivers/crypto/caam/caamhash.c | 24 ++++++++++++++++++++++++
+ 1 file changed, 24 insertions(+)
+
+diff --git a/drivers/crypto/caam/caamhash.c b/drivers/crypto/caam/caamhash.c
+index 49106ea42887..fe9c156333ca 100644
+--- a/drivers/crypto/caam/caamhash.c
++++ b/drivers/crypto/caam/caamhash.c
+@@ -803,6 +803,10 @@ static int ahash_update_ctx(struct ahash_request *req)
+ 	if (to_hash) {
+ 		src_nents = sg_nents_for_len(req->src,
+ 					     req->nbytes - (*next_buflen));
++		if (src_nents < 0) {
++			dev_err(jrdev, "Invalid number of src SG.\n");
++			return src_nents;
++		}
+ 		sec4_sg_src_index = 1 + (*buflen ? 1 : 0);
+ 		sec4_sg_bytes = (sec4_sg_src_index + src_nents) *
+ 				 sizeof(struct sec4_sg_entry);
+@@ -1002,6 +1006,10 @@ static int ahash_finup_ctx(struct ahash_request *req)
+ 	int sh_len;
+ 
+ 	src_nents = sg_nents_for_len(req->src, req->nbytes);
++	if (src_nents < 0) {
++		dev_err(jrdev, "Invalid number of src SG.\n");
++		return src_nents;
++	}
+ 	sec4_sg_src_index = 1 + (buflen ? 1 : 0);
+ 	sec4_sg_bytes = (sec4_sg_src_index + src_nents) *
+ 			 sizeof(struct sec4_sg_entry);
+@@ -1086,6 +1094,10 @@ static int ahash_digest(struct ahash_request *req)
+ 	int sh_len;
+ 
+ 	src_nents = sg_count(req->src, req->nbytes);
++	if (src_nents < 0) {
++		dev_err(jrdev, "Invalid number of src SG.\n");
++		return src_nents;
++	}
+ 	dma_map_sg(jrdev, req->src, src_nents ? : 1, DMA_TO_DEVICE);
+ 	sec4_sg_bytes = src_nents * sizeof(struct sec4_sg_entry);
+ 
+@@ -1234,6 +1246,10 @@ static int ahash_update_no_ctx(struct ahash_request *req)
+ 	if (to_hash) {
+ 		src_nents = sg_nents_for_len(req->src,
+ 					     req->nbytes - (*next_buflen));
++		if (src_nents < 0) {
++			dev_err(jrdev, "Invalid number of src SG.\n");
++			return src_nents;
++		}
+ 		sec4_sg_bytes = (1 + src_nents) *
+ 				sizeof(struct sec4_sg_entry);
+ 
+@@ -1342,6 +1358,10 @@ static int ahash_finup_no_ctx(struct ahash_request *req)
+ 	int ret = 0;
+ 
+ 	src_nents = sg_nents_for_len(req->src, req->nbytes);
++	if (src_nents < 0) {
++		dev_err(jrdev, "Invalid number of src SG.\n");
++		return src_nents;
++	}
+ 	sec4_sg_src_index = 2;
+ 	sec4_sg_bytes = (sec4_sg_src_index + src_nents) *
+ 			 sizeof(struct sec4_sg_entry);
+@@ -1430,6 +1450,10 @@ static int ahash_update_first(struct ahash_request *req)
+ 
+ 	if (to_hash) {
+ 		src_nents = sg_count(req->src, req->nbytes - (*next_buflen));
++		if (src_nents < 0) {
++			dev_err(jrdev, "Invalid number of src SG.\n");
++			return src_nents;
++		}
+ 		dma_map_sg(jrdev, req->src, src_nents ? : 1, DMA_TO_DEVICE);
+ 		sec4_sg_bytes = src_nents * sizeof(struct sec4_sg_entry);
+ 
+-- 
+2.11.0
+

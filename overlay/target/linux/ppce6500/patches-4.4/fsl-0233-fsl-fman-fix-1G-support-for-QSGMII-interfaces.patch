@@ -1,0 +1,29 @@
+From 606987b04e6c0dd8027ea331f2eeae35a5f4413c Mon Sep 17 00:00:00 2001
+From: Madalin Bucur <madalin.bucur@nxp.com>
+Date: Mon, 19 Dec 2016 22:42:43 +0200
+Subject: [PATCH] fsl/fman: fix 1G support for QSGMII interfaces
+
+QSGMII ports were not advertising 1G speed.
+
+Signed-off-by: Madalin Bucur <madalin.bucur@nxp.com>
+Reviewed-by: Camelia Groza <camelia.groza@nxp.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+---
+ drivers/net/ethernet/freescale/fman/mac.c | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/drivers/net/ethernet/freescale/fman/mac.c b/drivers/net/ethernet/freescale/fman/mac.c
+index 69ca42ce5dd5..0b31f8502ada 100644
+--- a/drivers/net/ethernet/freescale/fman/mac.c
++++ b/drivers/net/ethernet/freescale/fman/mac.c
+@@ -594,6 +594,7 @@ static const u16 phy2speed[] = {
+ 	[PHY_INTERFACE_MODE_RGMII_RXID]	= SPEED_1000,
+ 	[PHY_INTERFACE_MODE_RGMII_TXID]	= SPEED_1000,
+ 	[PHY_INTERFACE_MODE_RTBI]		= SPEED_1000,
++	[PHY_INTERFACE_MODE_QSGMII]		= SPEED_1000,
+ 	[PHY_INTERFACE_MODE_XGMII]		= SPEED_10000
+ };
+ 
+-- 
+2.11.0
+

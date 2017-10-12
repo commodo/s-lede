@@ -1,0 +1,33 @@
+From 6391c27af11c40d5717315577461cca3e0a0aa1a Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Horia=20Geant=C4=83?= <horia.geanta@nxp.com>
+Date: Thu, 3 Nov 2016 15:36:03 +0200
+Subject: [PATCH 57/57] dpaa_eth: sync with qbman changes
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+Fixes: c98d1fd60f8d "dpaa_eth: add trace points"
+Signed-off-by: Horia Geantă <horia.geanta@nxp.com>
+---
+ drivers/net/ethernet/freescale/dpaa/dpaa_eth_trace.h | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/net/ethernet/freescale/dpaa/dpaa_eth_trace.h b/drivers/net/ethernet/freescale/dpaa/dpaa_eth_trace.h
+index cf7e8c8..409c1dc 100644
+--- a/drivers/net/ethernet/freescale/dpaa/dpaa_eth_trace.h
++++ b/drivers/net/ethernet/freescale/dpaa/dpaa_eth_trace.h
+@@ -79,9 +79,9 @@ DECLARE_EVENT_CLASS(dpaa_eth_fd,
+ 	TP_fast_assign(
+ 		__entry->fqid = fq->fqid;
+ 		__entry->fd_addr = qm_fd_addr_get64(fd);
+-		__entry->fd_format = fd->format;
++		__entry->fd_format = qm_fd_get_format(fd);
+ 		__entry->fd_offset = qm_fd_get_offset(fd);
+-		__entry->fd_length = dpaa_fd_length(fd);
++		__entry->fd_length = qm_fd_get_length(fd);
+ 		__entry->fd_status = fd->status;
+ 		__assign_str(name, netdev->name);
+ 	),
+-- 
+2.10.2
+

@@ -1,0 +1,41 @@
+From 1407f8cfcccd92570ecb8b86d16052fba3ce3a1c Mon Sep 17 00:00:00 2001
+From: Madalin Bucur <madalin.bucur@nxp.com>
+Date: Tue, 19 Jul 2016 10:56:17 +0300
+Subject: [PATCH 22/57] fsl/fman: split lines over 80 characters
+
+Signed-off-by: Madalin Bucur <madalin.bucur@nxp.com>
+---
+ drivers/net/ethernet/freescale/fman/fman_muram.c | 3 ++-
+ drivers/net/ethernet/freescale/fman/fman_muram.h | 3 ++-
+ 2 files changed, 4 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/net/ethernet/freescale/fman/fman_muram.c b/drivers/net/ethernet/freescale/fman/fman_muram.c
+index 47394c4..5ec94d2 100644
+--- a/drivers/net/ethernet/freescale/fman/fman_muram.c
++++ b/drivers/net/ethernet/freescale/fman/fman_muram.c
+@@ -150,7 +150,8 @@ unsigned long fman_muram_alloc(struct muram_info *muram, size_t size)
+  *
+  * Free an allocated memory from FM-MURAM partition.
+  */
+-void fman_muram_free_mem(struct muram_info *muram, unsigned long offset, size_t size)
++void fman_muram_free_mem(struct muram_info *muram, unsigned long offset,
++			 size_t size)
+ {
+ 	unsigned long addr = fman_muram_offset_to_vbase(muram, offset);
+ 
+diff --git a/drivers/net/ethernet/freescale/fman/fman_muram.h b/drivers/net/ethernet/freescale/fman/fman_muram.h
+index 889649a..453bf84 100644
+--- a/drivers/net/ethernet/freescale/fman/fman_muram.h
++++ b/drivers/net/ethernet/freescale/fman/fman_muram.h
+@@ -46,6 +46,7 @@ unsigned long fman_muram_offset_to_vbase(struct muram_info *muram,
+ 
+ unsigned long fman_muram_alloc(struct muram_info *muram, size_t size);
+ 
+-void fman_muram_free_mem(struct muram_info *muram, unsigned long offset, size_t size);
++void fman_muram_free_mem(struct muram_info *muram, unsigned long offset,
++			 size_t size);
+ 
+ #endif /* __FM_MURAM_EXT */
+-- 
+2.10.2
+

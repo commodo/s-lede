@@ -1,0 +1,37 @@
+From 168b7b62fb69fd4b3bd57f3acd798b1285ea3608 Mon Sep 17 00:00:00 2001
+From: Madalin Bucur <madalin.bucur@nxp.com>
+Date: Thu, 19 May 2016 10:18:57 +0300
+Subject: [PATCH 53/57] dts: fix t102x device trees
+
+Signed-off-by: Madalin Bucur <madalin.bucur@nxp.com>
+---
+ arch/powerpc/boot/dts/fsl/t1024qds.dts      | 2 +-
+ arch/powerpc/boot/dts/fsl/t1024si-post.dtsi | 2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/arch/powerpc/boot/dts/fsl/t1024qds.dts b/arch/powerpc/boot/dts/fsl/t1024qds.dts
+index 80e907b..de9afbf 100644
+--- a/arch/powerpc/boot/dts/fsl/t1024qds.dts
++++ b/arch/powerpc/boot/dts/fsl/t1024qds.dts
+@@ -275,4 +275,4 @@
+ 	};
+ };
+ 
+-/include/ "t1024si-post.dtsi"
++#include "t1024si-post.dtsi"
+diff --git a/arch/powerpc/boot/dts/fsl/t1024si-post.dtsi b/arch/powerpc/boot/dts/fsl/t1024si-post.dtsi
+index 95e3af8..bb48034 100644
+--- a/arch/powerpc/boot/dts/fsl/t1024si-post.dtsi
++++ b/arch/powerpc/boot/dts/fsl/t1024si-post.dtsi
+@@ -32,7 +32,7 @@
+  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+  */
+ 
+-/include/ "t1023si-post.dtsi"
++#include "t1023si-post.dtsi"
+ 
+ / {
+ 	aliases {
+-- 
+2.10.2
+

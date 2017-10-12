@@ -1,0 +1,26 @@
+From 53ade5bd7cfdce68fd4d179c7762fe75ded1b22c Mon Sep 17 00:00:00 2001
+From: Madalin Bucur <madalin.bucur@freescale.com>
+Date: Fri, 1 Apr 2016 13:31:06 +0300
+Subject: [PATCH 52/57] powerpc/fsl/dts: repair T1023 device tree
+
+Signed-off-by: Madalin Bucur <madalin.bucur@freescale.com>
+
+Conflicts:
+	arch/powerpc/boot/dts/fsl/t1023rdb.dts
+---
+ arch/powerpc/boot/dts/fsl/t1023rdb.dts | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/arch/powerpc/boot/dts/fsl/t1023rdb.dts b/arch/powerpc/boot/dts/fsl/t1023rdb.dts
+index 94973b64..efa85ca 100644
+--- a/arch/powerpc/boot/dts/fsl/t1023rdb.dts
++++ b/arch/powerpc/boot/dts/fsl/t1023rdb.dts
+@@ -186,4 +186,4 @@
+ 	};
+ };
+ 
+-/include/ "t1023si-post.dtsi"
++#include "t1023si-post.dtsi"
+-- 
+2.10.2
+

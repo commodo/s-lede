@@ -1,0 +1,35 @@
+From dad4ddc4800576462f2d45ef468f177e5650cd42 Mon Sep 17 00:00:00 2001
+From: Madalin Bucur <madalin.bucur@nxp.com>
+Date: Tue, 12 Jul 2016 18:08:52 +0300
+Subject: [PATCH 32/57] fsl/fman: fix return value checking
+
+Signed-off-by: Madalin Bucur <madalin.bucur@nxp.com>
+---
+ drivers/net/ethernet/freescale/fman/fman.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/net/ethernet/freescale/fman/fman.c b/drivers/net/ethernet/freescale/fman/fman.c
+index 1fc1049..dafd9e1 100644
+--- a/drivers/net/ethernet/freescale/fman/fman.c
++++ b/drivers/net/ethernet/freescale/fman/fman.c
+@@ -618,7 +618,7 @@ struct fman {
+ 	unsigned long cam_offset;
+ 	size_t cam_size;
+ 	/* Fifo in MURAM */
+-	int fifo_offset;
++	unsigned long fifo_offset;
+ 	size_t fifo_size;
+ 
+ 	u32 liodn_base[64];
+@@ -2036,7 +2036,7 @@ static int fman_init(struct fman *fman)
+ 	/* allocate MURAM for FIFO according to total size */
+ 	fman->fifo_offset = fman_muram_alloc(fman->muram,
+ 					     fman->state->total_fifo_size);
+-	if (IS_ERR_VALUE(fman->cam_offset)) {
++	if (IS_ERR_VALUE(fman->fifo_offset)) {
+ 		free_init_resources(fman);
+ 		dev_err(fman->dev, "%s: MURAM alloc for BMI FIFO failed\n",
+ 			__func__);
+-- 
+2.10.2
+
