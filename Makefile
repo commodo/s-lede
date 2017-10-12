@@ -54,13 +54,23 @@ target/$(1)/$(2)/feeds: target/$(1)/$(2)/mkbuildir
 target/$(1)/$(2)/config: target/$(1)/$(2)/feeds
 	cp -f side/targets/$(1)/$(2)/config build/$(1)/$(2)/.config
 
-target/$(1)/$(2)/defconfig: target/$(1)/$(2)/config
+target/$(1)/$(2)/defconfig: target/$(1)/$(2)/config target/$(1)/$(2)/kernelconfig
 	make -C build/$(1)/$(2) defconfig
 	cp -f build/$(1)/$(2)/.config side/targets/$(1)/$(2)/config
 
 target/$(1)/$(2)/menuconfig: target/$(1)/$(2)/config
 	make -C build/$(1)/$(2) menuconfig
 	cp -f build/$(1)/$(2)/.config side/targets/$(1)/$(2)/config
+
+target/$(1)/$(2)/kernelconfig: target/$(1)/$(2)/config
+	[ -d build/$(1)/$(2)/env/ ] || mkdir -p build/$(1)/$(2)/env/
+	[ -e build/$(1)/$(2)/env/kernel-config ] || \
+		ln -s ../../../../side/targets/$(1)/$(2)/kernelconfig-overlay \
+		build/$(1)/$(2)/env/kernel-config
+
+target/$(1)/$(2)/kernel_menuconfig: target/$(1)/$(2)/config
+	make -C  build/$(1)/$(2) kernel_menuconfig CONFIG_TARGET=env;
+	cp build/$(1)/$(2)/env/kernel-config side/targets/$(1)/$(2)/kernelconfig-overlay
 
 target/$(1)/$(2): target/$(1)/$(2)/defconfig
 	+make -C build/$(1)/$(2)
@@ -71,6 +81,8 @@ NOT_PARALLEL_BUILDS+= \
 	target/$(1)/$(2)/config \
 	target/$(1)/$(2)/defconfig \
 	target/$(1)/$(2)/menuconfig \
+	target/$(1)/$(2)/kernelconfig \
+	target/$(1)/$(2)/kernel_menuconfig
 
 endef
 
