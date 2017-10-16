@@ -43,6 +43,8 @@ help:
 	@echo "side-lede platforms:"
 	@$(call iterate_devices,print_device)
 
+.PHONY: target_prepare_base style help
+
 define target_template
 
 target/$(1)/$(2)/mkbuildir: target_prepare_base
@@ -77,6 +79,15 @@ target/$(1)/$(2): target/$(1)/$(2)/defconfig
 
 NOT_PARALLEL_BUILDS+= \
 	target/$(1)/$(2)/mkbuildir \
+	target/$(1)/$(2)/feeds \
+	target/$(1)/$(2)/config \
+	target/$(1)/$(2)/defconfig \
+	target/$(1)/$(2)/menuconfig \
+	target/$(1)/$(2)/kernelconfig \
+	target/$(1)/$(2)/kernel_menuconfig
+
+.PHONY: target/$(1)/$(2)/mkbuildir \
+	target/$(1)/$(2) \
 	target/$(1)/$(2)/feeds \
 	target/$(1)/$(2)/config \
 	target/$(1)/$(2)/defconfig \
